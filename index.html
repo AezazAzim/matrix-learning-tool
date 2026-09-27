@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matrix Visual Lab</title>
+  <style>
+    :root{--ink:#172033;--muted:#64748b;--blue:#2563eb;--cyan:#06b6d4;--pink:#db2777;--green:#16a34a;--paper:#f8fbff;--line:#dbe5f1}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;color:var(--ink);background:linear-gradient(135deg,#e0f2fe,#f5f3ff 55%,#fdf2f8)}
+    .wrap{max-width:1250px;margin:auto;padding:28px 18px 50px}.hero{text-align:center;margin-bottom:22px}.hero h1{font-size:clamp(2rem,5vw,4rem);margin:0;background:linear-gradient(90deg,#1d4ed8,#9333ea,#db2777);color:transparent;background-clip:text}.hero p{color:var(--muted);font-size:1.1rem}
+    .card{background:#ffffffd9;border:1px solid #fff;border-radius:24px;padding:22px;margin:18px 0;box-shadow:0 18px 50px #33415520;backdrop-filter:blur(8px)}
+    .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:end}.control{display:grid;gap:5px}.control label{font-size:.82rem;font-weight:700;color:var(--muted)}input,select,button{font:inherit;border-radius:10px;border:1px solid var(--line);padding:10px 12px}input{width:68px}button{cursor:pointer;background:var(--blue);color:white;border:0;font-weight:700}button:hover{filter:brightness(1.08);transform:translateY(-1px)}.pink{background:var(--pink)}.green{background:var(--green)}
+    .matrices{display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:18px;align-items:start}.matrix-card{border:1px solid var(--line);border-radius:18px;padding:16px;background:var(--paper)}.matrix-card h2{margin:0 0 12px;font-size:1.15rem}.matrix-grid{display:grid;gap:7px;justify-content:center}.cell{width:58px;height:54px;text-align:center;font-weight:800;font-size:1.1rem;background:white;border:2px solid #cbd5e1;border-radius:9px}.cell:focus{border-color:var(--blue);outline:3px solid #2563eb22}.result .cell{display:grid;place-items:center;background:#ecfdf5;border-color:#86efac}.hint{font-size:.88rem;color:var(--muted);line-height:1.45}
+    .viz-wrap{display:grid;grid-template-columns:1fr 1fr;gap:18px}.viz{min-height:330px;border:1px solid var(--line);border-radius:18px;padding:14px;background:#fff}.viz h2{margin:0 0 8px}.viz svg{width:100%;height:270px;background:linear-gradient(#ffffff,#f8fbff);border-radius:12px}.axis{stroke:#94a3b8;stroke-width:1}.gridline{stroke:#dbeafe;stroke-width:1}.vector{stroke:#2563eb;stroke-width:4;marker-end:url(#arrow)}.transformed{stroke:#db2777;stroke-width:4;marker-end:url(#arrowPink)}.dot{fill:#2563eb}.dot2{fill:#db2777}.legend{display:flex;gap:14px;font-size:.85rem;color:var(--muted);flex-wrap:wrap}.legend span:before{content:'';display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--blue);margin-right:5px}.legend .p:before{background:var(--pink)}
+    .explain{background:#eff6ff;border-left:5px solid var(--blue);border-radius:12px;padding:15px;line-height:1.6}.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px}.step{padding:13px;border-radius:12px;background:#f8fafc;border:1px solid var(--line);font-size:.92rem}.step strong{color:var(--pink)}
+    @media(max-width:850px){.matrices,.viz-wrap{grid-template-columns:1fr}.cell{width:52px;height:48px}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero"><h1>Matrix Visual Lab</h1><p>See matrices as grids, colors, vectors, and animated row × column calculations.</p></header>
+
+  <section class="card"><div class="controls">
+    <div class="control"><label>Rows A</label><input id="ar" type="number" min="1" max="5" value="2"></div><div class="control"><label>Columns A</label><input id="ac" type="number" min="1" max="5" value="2"></div>
+    <div class="control"><label>Rows B</label><input id="br" type="number" min="1" max="5" value="2"></div><div class="control"><label>Columns B</label><input id="bc" type="number" min="1" max="5" value="2"></div>
+    <button onclick="resizeMatrices()">Create matrices</button><button class="pink" onclick="example('multiply')">Multiplication example</button><button class="green" onclick="example('add')">Addition example</button>
+  </div></section>
+
+  <section class="matrices">
+    <article class="matrix-card"><h2>🔵 Matrix A <span id="adim"></span></h2><div id="A" class="matrix-grid"></div><p class="hint">Edit the cells. Darker blue means a larger positive value.</p></article>
+    <article class="matrix-card"><h2>🟣 Matrix B <span id="bdim"></span></h2><div id="B" class="matrix-grid"></div><p class="hint">A matrix is a rectangular arrangement of numbers in rows and columns.</p></article>
+    <article class="matrix-card result"><h2>🟢 Result <span id="rdim"></span></h2><div id="R" class="matrix-grid"></div><p id="status" class="hint">Choose an operation below.</p></article>
+  </section>
+
+  <section class="card"><div class="controls"><button onclick="operate('add')">A + B</button><button onclick="operate('sub')">A − B</button><button onclick="operate('mul')">A × B</button><button onclick="operate('transpose')">Transpose A</button></div><div id="explain" class="explain">Choose an operation to see the visual explanation.</div><div id="steps" class="steps"></div></section>
+
+  <section class="viz-wrap"><article class="viz"><h2>📊 Heatmap: number size</h2><div id="heatmap"></div><p class="hint">Each colored square represents one matrix entry. Hover over a square to inspect its value.</p></article><article class="viz"><h2>🎯 Matrix as vectors</h2><svg id="graph" viewBox="0 0 420 270" aria-label="vector visualization"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#2563eb"/></marker><marker id="arrowPink" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#db2777"/></marker></defs></svg><div class="legend"><span>A's first two columns</span><span class="p">B's first two columns</span></div></article></section>
+</div>
+<script>
+let A=[[2,1],[1,3]],B=[[1,2],[3,1]],R=[];
+const $=id=>document.getElementById(id);
+function render(name,M){const el=$(name);el.innerHTML='';el.style.gridTemplateColumns=`repeat(${M[0]?.length||1},58px)`;M.forEach((row,i)=>row.forEach((v,j)=>{let x=document.createElement('input');x.className='cell';x.type='number';x.value=v;x.title=`row ${i+1}, column ${j+1}: ${v}`;x.oninput=()=>{(name==='A'?A:B)[i][j]=+x.value||0;visuals()};el.append(x)}));$(name==='A'?'adim':'bdim').textContent=`(${M.length} × ${M[0].length})`}
+function renderResult(M){R=M;let el=$('R');el.innerHTML='';if(!M.length){$('rdim').textContent='';return}el.style.gridTemplateColumns=`repeat(${M[0].length},58px)`;M.forEach(row=>row.forEach(v=>{let x=document.createElement('div');x.className='cell';x.textContent=Number.isInteger(v)?v:v.toFixed(2);el.append(x)}));$('rdim').textContent=`(${M.length} × ${M[0].length})`}
+function resizeMatrices(){let ar=+$('ar').value,ac=+$('ac').value,br=+$('br').value,bc=+$('bc').value;A=Array.from({length:ar},(_,i)=>Array.from({length:ac},(_,j)=>A[i]?.[j]??0));B=Array.from({length:br},(_,i)=>Array.from({length:bc},(_,j)=>B[i]?.[j]??0));render('A',A);render('B',B);renderResult([]);visuals()}
+function validSame(){return A.length===B.length&&A[0].length===B[0].length}
+function operate(kind){let text='',out=[];if(kind==='add'||kind==='sub'){if(!validSame()){fail('Addition and subtraction require equal dimensions.');return}out=A.map((r,i)=>r.map((v,j)=>kind==='add'?v+B[i][j]:v-B[i][j]));text=`<b>${kind==='add'?'Addition':'Subtraction'}:</b> corresponding cells are combined. The highlighted grid shows one result for every matching position.`}
+if(kind==='transpose'){out=A[0].map((_,j)=>A.map(r=>r[j]));text='<b>Transpose:</b> rows become columns. A matrix with dimensions m × n becomes n × m.'}
+if(kind==='mul'){if(A[0].length!==B.length){fail('Multiplication is not possible: columns of A must equal rows of B.');return}out=A.map((r,i)=>B[0].map((_,j)=>r.reduce((s,_,k)=>s+A[i][k]*B[k][j],0)));text='<b>Multiplication:</b> each result cell is a row of A dotted with a column of B. Watch the step cards below.';$('steps').innerHTML=out.flatMap((r,i)=>r.map((v,j)=>`<div class="step"><strong>Result[${i+1},${j+1}]</strong><br>${A[i].map((_,k)=>`${A[i][k]}×${B[k][j]}`).join(' + ')} = <b>${v}</b></div>`)).join('')}
+$('explain').innerHTML=text;$('status').textContent='Operation completed visually.';renderResult(out);visuals()}
+function fail(msg){$('explain').innerHTML='<b>⚠️ '+msg+'</b>';$('status').textContent='Try changing the matrix sizes.';renderResult([]);$('steps').innerHTML=''}
+function example(t){if(t==='multiply'){A=[[1,2,3],[4,5,6]];B=[[7,8],[9,10],[11,12]]}else{A=[[2,3],[1,4]];B=[[5,1],[2,6]]}$('ar').value=A.length;$('ac').value=A[0].length;$('br').value=B.length;$('bc').value=B[0].length;render('A',A);render('B',B);operate(t==='multiply'?'mul':'add')}
+function visuals(){heat();graph()}
+function heat(){let all=[...A.flat(),...B.flat()],max=Math.max(1,...all.map(Math.abs));let html='<div style="display:flex;gap:20px;flex-wrap:wrap">';[['A',A],['B',B]].forEach(([n,M])=>{html+=`<div><b>${n}</b><div style="display:grid;grid-template-columns:repeat(${M[0].length},42px);gap:4px;margin-top:6px">`;M.flat().forEach(v=>{let alpha=Math.min(.9,Math.abs(v)/max*.8+.1);let color=v>=0?`rgba(37,99,235,${alpha})`:`rgba(219,39,119,${alpha})`;html+=`<div title="${v}" style="height:42px;border-radius:7px;background:${color};color:white;display:grid;place-items:center;font-weight:800">${v}</div>`});html+='</div></div>'});$('heatmap').innerHTML=html}
+function graph(){let s=$('graph');s.querySelectorAll('.gridline,.axis,.vector,.transformed,.dot,.dot2').forEach(x=>x.remove());for(let x=20;x<420;x+=40)s.insertAdjacentHTML('beforeend',`<line class="gridline" x1="${x}" y1="10" x2="${x}" y2="250"/><line class="gridline" x1="20" y1="${x-10}" x2="400" y2="${x-10}"/>`);s.insertAdjacentHTML('beforeend','<line class="axis" x1="20" y1="135" x2="400" y2="135"/><line class="axis" x1="210" y1="10" x2="210" y2="250"/>');let scale=25;[[A,'vector'],[B,'transformed']].forEach(([M,c])=>{(M.slice(0,2)).forEach((r,i)=>{let x=210+(r[0]||0)*scale,y=135-(r[1]||0)*scale;s.insertAdjacentHTML('beforeend',`<line class="${c}" x1="210" y1="135" x2="${x}" y2="${y}"/><circle class="${c==='vector'?'dot':'dot2'} cx="${x}" cy="${y}" r="5"/>`)})})}
+resizeMatrices();
+</script></body></html>
